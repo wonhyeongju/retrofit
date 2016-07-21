@@ -37,6 +37,7 @@ import okhttp3.ResponseBody;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.Field;
+import retrofit2.http.FieldList;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
@@ -698,6 +699,20 @@ final class ServiceMethod<T> {
           Converter<?, String> converter =
               retrofit.stringConverter(iterableType, annotations);
           return new ParameterHandler.QueryList<>(converter, ((QueryList) annotation).encoded());
+      } else if (annotation instanceof FieldList) {
+    	  Class<?> rawParameterType = Utils.getRawType(type);
+          if (!List.class.isAssignableFrom(rawParameterType)) {
+            throw parameterError(p, "@FieldList parameter type must be List.");
+          }
+          Type listType = Utils.getSupertype(type, rawParameterType, List.class);
+          if (!(listType instanceof ParameterizedType)) {
+            throw parameterError(p, "List must include generic types (e.g., List<KeyValue>)");
+          }
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+          Converter<?, String> converter =
+              retrofit.stringConverter(iterableType, annotations);
+          return new ParameterHandler.FieldList<>(converter, ((FieldList) annotation).encoded());
       }
 
       return null; // Not a Retrofit annotation.

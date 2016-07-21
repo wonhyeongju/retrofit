@@ -242,6 +242,35 @@ abstract class ParameterHandler<T> {
     }
   }
 
+  static final class FieldList<T> extends ParameterHandler<List<KeyValue<String, T>>> {
+    private final Converter<T, String> valueConverter;
+    private final boolean encoded;
+
+    FieldList(Converter<T, String> valueConverter, boolean encoded) {
+      this.valueConverter = valueConverter;
+      this.encoded = encoded;
+    }
+
+    void apply(RequestBuilder builder, List<KeyValue<String, T>> value) throws IOException {
+      if (value == null) {
+        throw new IllegalArgumentException("Field list was null.");
+      }
+
+      for (KeyValue<String, T> item : value) {
+    	  String entryKey = item.getKey();
+          if (entryKey == null) {
+            throw new IllegalArgumentException("Field list item contained null key.");
+          }
+          T entryValue = item.getValue();
+          if (entryValue == null) {
+            throw new IllegalArgumentException(
+                "Field list contained null value for key '" + entryKey + "'.");
+          }
+          builder.addQueryParam(entryKey, valueConverter.convert(entryValue), encoded);  
+      }
+    }
+  }  
+  
   static final class Part<T> extends ParameterHandler<T> {
     private final Headers headers;
     private final Converter<T, RequestBody> converter;
