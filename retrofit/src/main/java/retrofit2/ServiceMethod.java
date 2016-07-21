@@ -693,10 +693,11 @@ final class ServiceMethod<T> {
           if (!(listType instanceof ParameterizedType)) {
             throw parameterError(p, "List must include generic types (e.g., List<KeyValue>)");
           }
-          ParameterizedType parameterizedType = (ParameterizedType) listType;
-          Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
-          Converter<?, String> valueConverter = retrofit.stringConverter(valueType, annotations);
-          return new ParameterHandler.QueryList<>(valueConverter, ((QueryList) annotation).encoded());
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+          Converter<?, String> converter =
+              retrofit.stringConverter(iterableType, annotations);
+          return new ParameterHandler.QueryList<>(converter, ((QueryList) annotation).encoded());
       }
 
       return null; // Not a Retrofit annotation.
