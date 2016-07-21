@@ -22,6 +22,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -52,6 +53,7 @@ import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import retrofit2.http.QueryList;
 import retrofit2.http.QueryMap;
 import retrofit2.http.Url;
 
@@ -682,6 +684,19 @@ final class ServiceMethod<T> {
         }
         gotBody = true;
         return new ParameterHandler.Body<>(converter);
+      } else if (annotation instanceof QueryList) {
+    	  Class<?> rawParameterType = Utils.getRawType(type);
+          if (!List.class.isAssignableFrom(rawParameterType)) {
+            throw parameterError(p, "@QueryList parameter type must be List.");
+          }
+          Type listType = Utils.getSupertype(type, rawParameterType, List.class);
+          if (!(listType instanceof ParameterizedType)) {
+            throw parameterError(p, "List must include generic types (e.g., List<KeyValue>)");
+          }
+          ParameterizedType parameterizedType = (ParameterizedType) listType;
+          Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+          Converter<?, String> valueConverter = retrofit.stringConverter(valueType, annotations);
+          return new ParameterHandler.QueryList<>(valueConverter, ((QueryList) annotation).encoded());
       }
 
       return null; // Not a Retrofit annotation.
